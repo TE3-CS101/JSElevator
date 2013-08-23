@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <!-- Styles for the page -->
+    <style type="text/css">
+        body { margin: 0; padding: 0; }
+        #controls { margin: 0; padding: 10px 0 0 10px; }
+        #controls > input { float: left; }
+        #controls > form { margin: 0; padding: 0; float: left; }
+        body > p { clear: both; padding-top: 10px; padding-left: 10px; }
+        #container { width: 200px; margin-left: 10px; }
+        #floorcontainer { width: 100px; margin: 0; padding: 0; float: left; }
+        .floor { width: 100px; height: 90px; margin: 0; border-bottom: green 10px solid; text-align: center; }
+        .floor > p { margin: 0; padding-top: 30px; font-family: sans-serif; font-size: 20pt; }
+        #elevator { width: 80px; height: 80px; margin: 0; padding: 0; float: left; border: 10px solid black; }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <input id="top" type="button" value="Top" />
+        <input id="up" type="button" value="Up" />
+        <input id="down" type="button" value="Down" />
+        <input id="bottom" type="button" value="Bottom" />
+        <input id="speed" type="number" value="1500" />
+        <input id="setspeed" type="button" value="Set speed" />
+        <form action="elevator.html" method="get">
+            <input id="floors" name="floors" type="number" />
+            <input type="submit" value="Set floors" />
+        </form>
+    </div>
+    <p>Current floor: <span id="floor">0</span> <span id="status"></span></p>
+    <div id="container">
+        <div id="floorcontainer"></div>
+        <div id="elevator"></div>
+    </div>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script type="text/javascript">
+        // Code to get key/value pairs from the query string
+        var QueryString=function(){var a={};var b=window.location.search.substring(1).split("&");for(var i=0;i< b.length;i++){var c=b[i].split("=");if(typeof a[c[0]]==="undefined")a[c[0]]=c[1];else if(typeof a[c[0]]==="string")a[c[0]]=[a[c[0]],c[1]];else a[c[0]].push(c[1]);}return a;}();
+
+        // Intermediate variable to validate query string argument "floors"
+        var query_floors = parseInt(QueryString.floors);
+        
+        // Target floor (next floor to stop at)
+        var target = null;
+        
+        // The total number of floors, defaults to 4
+        var num_floors = query_floors ? query_floors : 4;
+        
+        // The current floor
+        var floor = 1;
+        
+        // Whether a person is waiting for the elevator
+        var waiting = false;
+        
+        // Time in milliseconds for elevator to move one floor
+        var speed = 1500;
+        
+        // Whether or not the elevator is currently moving
+        var moving = false;
+        
+        // Create the floors
+        for (var n = 0; n < num_floors; n++)
+            $('<div/>', {class: 'floor'}).append($('<p/>').text(num_floors - n)).appendTo($('#floorcontainer'));
+        
+        // Set the initial position of the elevator
+        $('#elevator').css('margin-top', (100 * (num_floors - floor)) + 'px');
+        
+        // Moves the elevator to the specified floor
+        function move(tar) {
+            // Return if it would cause the elevator to crash through the roof or floor
+            if (tar > num_floors || tar < 1)
+                return;
+            
+            // Set the target floor
+            target = tar;
+            
+            // Update the elevator status text to show what floor it is moving to
+            $('#status').text('-> ' + target);
+            
+            // Return if the elevator is already moving (the target will be updated anyway)
+            if (moving)
+                return;
+            
+            // We will now be moving the elevator
+            moving = true;
+            
+            // The next floor to stop at
+            var next = target > floor ? floor + 1 : floor - 1;
+            
+            // This code will actually move the elevator to its next floor
+            $('#elevator').animate({'margin-top': (100 * (num_floors - next)) + 'px'}, speed, function() {
+                // Update the current floor once the elevator has reached `next`
+                floor = next > floor ? floor + 1 : floor - 1;
+                
+                // Update the current floor in the #floor element
+                $('#floor').text(floor);
+                
+                // Clear the status, we are no longer moving
+                $('#status').text('');
+                
+                // Set moving to false, since we are not moving
+                moving = false;
+                
+                // If we haven't reached the target floor yet, start moving again
+                if (target != floor)
+                    move(target);
+                else // Otherwise clear the target variable and return
+                    target = null;
+            });
+        }
+        
+        // Initialize #floor text
+        $('#floor').text(floor);
+        
+        // Assign event handler to the click event of #top button
+        // This makes the elevator move to the top floor
+        $('#top').click(function() { move(num_floors); });
+        
+        // Assign event handler to the click event of #up button
+        // This makes the elevator move up one floor
+        $('#up').click(function() { move(target == null ? floor + 1 : target + 1); });
+        
+        // Assign event handler to the click event of #down button
+        // This makes the elevator move down one floor
+        $('#down').click(function() { move(target == null ? floor - 1 : target - 1); });
+        
+        // Assign event handler to the click event of #bottom button
+        // This makes the elevator move to the bottom floor
+        $('#bottom').click(function() { move(1); });
+        
+        // Assign event handler to the click event of #setspeed button
+        $('#setspeed').click(function() {
+            var s = parseInt($('#speed').val());
+            if (s) speed = s;
+        });
+    </script>
+</body>
+</html>
